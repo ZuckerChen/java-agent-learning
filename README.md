@@ -36,8 +36,7 @@ Agent的实现有以下两种方式
 - JDK1.5开始提供的premain，启动期加载
 - JDK1.6开始提供的agentmain，运行期加载
 ### 加载Agent的流程
-TODO补图
-
+![图片地址](https://github.com/ZuckerChen/java-agent-learning/blob/master/img-resource/agent%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B.png)
 
 ### 创建一个通过premain实现Agent的过程： 
 #### 1、定义MANIFEST.MF文件
@@ -316,5 +315,11 @@ channel:wechatinvoke pay
 add method!
 ```
 
+以上两个例子的完整代码上传到了：https://github.com/ZuckerChen/java-agent-learning
+
 ## 写在最后
-此篇文章只是对Java Agent做了最基本的介绍，和最简单的用法，我个人认他的核心优势是没有代码侵入性，
+- 此篇文章只是对Java Agent做了最基本的介绍和最简单的用法，目的是拓宽视野，碰到问题是能有更多的解决方案，如果要在生产上使用Java Agent那肯定还需要系统的学习insurment和classfile操作 。  
+- 我个人认为Java Agent的核心优势是没有代码侵入性，可以很方便的进行装载、拆卸、升级，尤其适合做监控类的辅助功能。大家也可以自己思考下我们还可以用Java Agent来做什么。  
+
+
+全文终！
