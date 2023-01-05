@@ -8,21 +8,21 @@
 5. 故障注入(阿里Chaos)
 6. 还有其他..
 
-看到这些是不是觉得Java Agent很强大，那么他是如何做到的呢?  
-其实啊它是JVM提供的一套后门工具，可以让我们对运行中的JVM进行监控、分析、修改字节码，并且没有业务侵入性。  
+我们看到JavaAgent有着这么广泛的应用，那么它是如何做到的呢？
+JavaAgent是JVM提供的一套后门工具，可以让我们对运行中的JVM进行监控、分析、修改字节码，并且没有业务侵入性。  
 下面我们一起学习一下Agent的基本概念和基本使用
 
 ## 基本概念
 - **JVMTI(JVM Tool Interface)** 是一套由JVM直接提供的native接口，通过这些接口我们可以查看JVM运行状态，设置回调函数。我们编写的Agent程序底层就是使用了JVMTI
 - **JVMTIAgent** 在JDK1.5之前通过c、c++来实现Agent程序(非本篇重点)
-- **JPLISAgent(Java Programming Language Instrumentation Services Agent)** 在JDK1.5之后提供了一个"插桩"工具包`java.lang.instrument`
+- **JPLISAgent(Java Programming Language Instrumentation Services Agent)** 在JDK1.5之后提供了一个"插桩"工具包java.lang.instrument
 可以方便的实现Java版本的Agent程序，这种方式实现的Agent就叫做JPLISAgent
 
 ## "插桩"工具
-简单使用`java.lang.instrument`工具包，既可以实现JVM级别的AOP
-我们先看下`Instrumentation`的核心方法:
-- `addTransformer`方法用于注册`ClassFileTransformer`的实现类。JVM读取字节码文件时，会触发JVMTI的ClassFileLoadHook回调事件，触发事件后最终会调用到`ClassFileTransformer`的`transform`方法，开发Agent的主要工作就是在`transform`方法中进行字节码操作  
-- `redefineClasses`和`retransformClasses`都可以对字节码进行修改和重新加载，区别是如果在类加载之后去重定义就需要使用`retransformClasses`方法
+简单使用java.lang.instrument工具包，既可以实现JVM级别的AOP
+我们先看下Instrumentation的核心方法:
+- addTransformer方法用于注册ClassFileTransformer的实现类。JVM读取字节码文件时，会触发JVMTI的ClassFileLoadHook回调事件，触发事件后最终会调用到ClassFileTransformer的transform方法，开发Agent的主要工作就是在transform方法中进行字节码操作  
+- redefineClasses和retransformClasses都可以对字节码进行修改和重新加载，区别是如果在类加载之后去重定义就需要使用retransformClasses方法
 ```
 addTransformer(ClassFileTransformer transformer);
 redefineClasses(ClassDefinition... definitions) 
@@ -30,13 +30,12 @@ retransformClasses(Class<?>... classes)
 ```
 
 ## 如何实现一个Agent
-看了上面这些晦涩的概念，有的朋友是不是有点头晕了，没关系，下面我们直接 *talk is cheap show me the code*
-
 Agent的实现有以下两种方式
 - JDK1.5开始提供的premain，启动期加载
 - JDK1.6开始提供的agentmain，运行期加载
 ### 加载Agent的流程
-![图片地址](https://github.com/ZuckerChen/java-agent-learning/blob/master/img-resource/agent%E5%8A%A0%E8%BD%BD%E6%B5%81%E7%A8%8B.png)
+![](https://yppphoto.hellobixin.com/yppphoto/b2f76796eebb4f929b982544dfdda5eb.png)
+
 
 ### 创建一个通过premain实现Agent的过程： 
 #### 1、定义MANIFEST.MF文件
@@ -175,7 +174,7 @@ public class LogInterceptor {
 }
 ```
 
-3、模拟一个目标程序，并添加启动参数`-javaagent:/Users/dzsb-002298/project/java-agent-learning/agent-apm/target/agent-apm-1.0-SNAPSHOT.jar`
+3、模拟一个目标程序，并添加启动参数-javaagent:/Users/dzsb-002298/project/java-agent-learning/agent-apm/target/agent-apm-1.0-SNAPSHOT.jar
 ``` java
 public class LogApplicationMain {
     public static void main(String[] args) {
@@ -198,7 +197,7 @@ public class RpcClient {
 }
 ```
 
-4、执行目标程序`LogApplicationMain`，可以看到是具体的方法已经被增强，打印了耗时日志
+4、执行目标程序LogApplicationMain，可以看到是具体的方法已经被增强，打印了耗时日志
 ``` 
 /Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/bin/java -javaagent:/Users/dzsb-002298/project/java-agent-learning/agent-apm/target/agent-apm-1.0-SNAPSHOT.jar -javaagent:/Applications/IntelliJ IDEA.app/Contents/lib/idea_rt.jar=59434:/Applications/IntelliJ IDEA.app/Contents/bin -Dfile.encoding=UTF-8 -classpath /Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/charsets.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/deploy.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/cldrdata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/jaccess.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/jfxrt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/nashorn.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/javaws.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/jce.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/jfr.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/jfxswt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/jsse.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/management-agent.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/plugin.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/resources.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/rt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/ant-javafx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/dt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/javafx-mx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/jconsole.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/packager.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/sa-jdi.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/tools.jar:/Users/dzsb-002298/project/java-agent-learning/project-demo/target/classes com.cz.demo.apm.LogApplicationMain
 agent premain attach success
@@ -276,7 +275,7 @@ public class PayService {
 }
 ```
 
-4、我们先执行业务程序`ApplicationMain`看到日志
+4、我们先执行业务程序ApplicationMain看到日志
 ```
 /Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/bin/java -javaagent:/Applications/IntelliJ IDEA.app/Contents/lib/idea_rt.jar=61703:/Applications/IntelliJ IDEA.app/Contents/bin -Dfile.encoding=UTF-8 -classpath /Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/charsets.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/deploy.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/cldrdata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/dnsns.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/jaccess.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/jfxrt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/localedata.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/nashorn.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/sunec.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/sunjce_provider.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/sunpkcs11.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/ext/zipfs.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/javaws.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/jce.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/jfr.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/jfxswt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/jsse.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/management-agent.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/plugin.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/resources.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/jre/lib/rt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/ant-javafx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/dt.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/javafx-mx.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/jconsole.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/packager.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/sa-jdi.jar:/Library/Java/JavaVirtualMachines/jdk1.8.0_261.jdk/Contents/Home/lib/tools.jar:/Users/dzsb-002298/project/java-agent-learning/project-demo/target/classes com.cz.demo.hotdeploy.service.ApplicationMain
 channel:wechatinvoke pay
@@ -284,7 +283,7 @@ channel:wechatinvoke pay
 channel:wechatinvoke pay
 channel:wechatinvoke pay
 ```
-5、再对`PayService`类进行修改，如下添加了一个方法addMethod()
+5、再对PayService类进行修改，如下添加了一个方法addMethod()
 ``` java
 public class PayService {
     private final static Random random = new Random();
